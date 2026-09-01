@@ -88,10 +88,48 @@ List<_AsteroidSeed> _generateAsteroids(int count) {
 }
 
 const double kMaxWorldRadius = 94;
+const double kZoomTargetMin = 0.7;
+const double kZoomTargetMax = 4.5;
 
 double orbitAngleFor(Planet planet, double simTime) {
   return (planet.name.hashCode % 360) * math.pi / 180 +
       simTime * planet.orbitSpeed;
+}
+
+Planet? findPlanetByName(String? name, List<Planet> allPlanets) {
+  if (name == null) return null;
+  for (final planet in allPlanets) {
+    if (planet.name == name) return planet;
+  }
+  return null;
+}
+
+/// Camera zoom to use when focusing [planetName], or 1.0 (full overview)
+/// when null or unknown. Closer planets get a tighter zoom so they read
+/// clearly; farther planets zoom just enough to include their orbit.
+double computeZoomTarget(String? planetName, List<Planet> allPlanets) {
+  final planet = findPlanetByName(planetName, allPlanets);
+  if (planet == null) return 1.0;
+  return (kMaxWorldRadius / (planet.distanceFromSun + 10))
+      .clamp(kZoomTargetMin, kZoomTargetMax);
+}
+
+/// World-space point (already rotated by [viewRotation]) that the camera
+/// should center on to keep [planetName] in view, or [Offset.zero] (the
+/// Sun) when null or unknown.
+Offset computePanTarget(
+  String? planetName,
+  List<Planet> allPlanets,
+  double simTime,
+  double viewRotation,
+) {
+  final planet = findPlanetByName(planetName, allPlanets);
+  if (planet == null) return Offset.zero;
+  final a = orbitAngleFor(planet, simTime) + viewRotation;
+  return Offset(
+    math.cos(a) * planet.distanceFromSun,
+    math.sin(a) * planet.distanceFromSun,
+  );
 }
 
 class PlanetHitTarget {
@@ -143,6 +181,7 @@ class _SolarSystemViewState extends State<SolarSystemView>
   double _rotationStart = 0.0;
   double _tiltStart = 0.55;
   Offset _dragStart = Offset.zero;
+  double _rotationVelocity = 0.0; // radians/sec, decays after a drag ends
 
   final Map<String, ui.Image> _images = {};
   bool _assetsLoaded = false;
@@ -169,32 +208,11 @@ class _SolarSystemViewState extends State<SolarSystemView>
 
   void _applyFocus(String? planetName) {
     _trackedPlanetName = planetName;
-    if (planetName == null) {
-      _zoomTarget = 1.0;
-      return;
-    }
-    for (final planet in planets) {
-      if (planet.name == planetName) {
-        _zoomTarget =
-            (kMaxWorldRadius / (planet.distanceFromSun + 10)).clamp(0.7, 4.5);
-        return;
-      }
-    }
+    _zoomTarget = computeZoomTarget(planetName, planets);
   }
 
   Offset _panTarget() {
-    final name = _trackedPlanetName;
-    if (name == null) return Offset.zero;
-    for (final planet in planets) {
-      if (planet.name == name) {
-        final a = orbitAngleFor(planet, _simTime) + _viewRotation;
-        return Offset(
-          math.cos(a) * planet.distanceFromSun,
-          math.sin(a) * planet.distanceFromSun,
-        );
-      }
-    }
-    return Offset.zero;
+    return computePanTarget(_trackedPlanetName, planets, _simTime, _viewRotation);
   }
 
   Future<void> _loadImages() async {
@@ -237,6 +255,14 @@ class _SolarSystemViewState extends State<SolarSystemView>
       changed = true;
     }
 
+    if (_rotationVelocity.abs() > 0.01) {
+      _viewRotation += _rotationVelocity * dt;
+      _rotationVelocity *= math.pow(0.02, dt).toDouble();
+      changed = true;
+    } else if (_rotationVelocity != 0) {
+      _rotationVelocity = 0;
+    }
+
     if (changed) setState(() {});
   }
 
@@ -260,11 +286,15 @@ class _SolarSystemViewState extends State<SolarSystemView>
     }
     if (closest != null) {
       widget.onSelectPlanet(closest.planet);
+      _applyFocus(closest.planet.name);
     }
   }
 
+  static const double _rotationSensitivity = 0.01;
+
   void _onScaleStart(ScaleStartDetails details) {
     _trackedPlanetName = null;
+    _rotationVelocity = 0;
     _zoomTarget = _zoom;
     _scaleStartZoom = _zoom;
     _rotationStart = _viewRotation;
@@ -277,9 +307,13 @@ class _SolarSystemViewState extends State<SolarSystemView>
       _zoom = (_scaleStartZoom * details.scale).clamp(0.3, 6.0);
       _zoomTarget = _zoom;
       final delta = details.localFocalPoint - _dragStart;
-      _viewRotation = _rotationStart + delta.dx * 0.01;
+      _viewRotation = _rotationStart + delta.dx * _rotationSensitivity;
       _tilt = (_tiltStart - delta.dy * 0.0025).clamp(0.18, 1.0);
     });
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    _rotationVelocity = details.velocity.pixelsPerSecond.dx * _rotationSensitivity;
   }
 
   @override
@@ -289,6 +323,7 @@ class _SolarSystemViewState extends State<SolarSystemView>
       onTapUp: _handleTapUp,
       onScaleStart: _onScaleStart,
       onScaleUpdate: _onScaleUpdate,
+      onScaleEnd: _onScaleEnd,
       child: SizedBox.expand(
         child: !_assetsLoaded
             ? const Center(

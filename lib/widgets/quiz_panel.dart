@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/quiz_data.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_prefs.dart';
 
 class QuizPanel extends StatefulWidget {
   const QuizPanel({super.key});
@@ -14,7 +15,16 @@ class _QuizPanelState extends State<QuizPanel> {
   int _currentQuestion = 0;
   int _score = 0;
   bool _showScore = false;
+  int? _bestScore;
   final List<String?> _userAnswers = List.filled(quizQuestions.length, null);
+
+  @override
+  void initState() {
+    super.initState();
+    AppPrefs.loadBestScore().then((value) {
+      if (mounted) setState(() => _bestScore = value);
+    });
+  }
 
   void _handleAnswer(String answer) {
     setState(() {
@@ -31,6 +41,11 @@ class _QuizPanelState extends State<QuizPanel> {
       setState(() => _currentQuestion++);
     } else if (_userAnswers.every((a) => a != null)) {
       setState(() => _showScore = true);
+      AppPrefs.saveBestScoreIfHigher(_score).then((_) {
+        AppPrefs.loadBestScore().then((value) {
+          if (mounted) setState(() => _bestScore = value);
+        });
+      });
     }
   }
 
@@ -96,6 +111,15 @@ class _QuizPanelState extends State<QuizPanel> {
           const SizedBox(height: 16),
           Text('Your score: $_score out of ${quizQuestions.length}',
               style: const TextStyle(fontSize: 18, color: Colors.white)),
+          if (_bestScore != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _bestScore == _score && _score > 0
+                  ? 'That\'s your best score yet! 🏆'
+                  : 'Best score: $_bestScore out of ${quizQuestions.length}',
+              style: const TextStyle(fontSize: 13, color: AppColors.primary),
+            ),
+          ],
           const SizedBox(height: 12),
           Text(message, style: const TextStyle(color: Color(0xFFD1D5DB))),
           const SizedBox(height: 20),

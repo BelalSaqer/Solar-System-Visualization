@@ -9,7 +9,9 @@ import '../widgets/planet_info_panel.dart';
 import '../widgets/quiz_panel.dart';
 import '../widgets/solar_system_view.dart';
 import '../widgets/timeline_panel.dart';
+import '../widgets/apod_panel.dart';
 import '../utils/external_link.dart';
+import '../utils/app_prefs.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +30,25 @@ class _HomeScreenState extends State<HomeScreen> {
   int _focusToken = 0;
   String? _focusPlanetName;
 
+  @override
+  void initState() {
+    super.initState();
+    AppPrefs.loadLastPlanet().then((name) {
+      if (!mounted || name == null) return;
+      for (final planet in planets) {
+        if (planet.name == name) {
+          setState(() => _selectedPlanet = planet);
+          break;
+        }
+      }
+    });
+  }
+
+  void _selectPlanet(Planet planet) {
+    setState(() => _selectedPlanet = planet);
+    AppPrefs.saveLastPlanet(planet.name);
+  }
+
   void _handleEventSelect(HistoricalEvent event) {
     setState(() {
       _selectedEvent = event;
@@ -42,6 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     });
+    if (event.relatedPlanet != null) {
+      AppPrefs.saveLastPlanet(event.relatedPlanet!);
+    }
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -99,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Positioned.fill(
           child: SolarSystemView(
             selectedPlanet: _selectedPlanet,
-            onSelectPlanet: (p) => setState(() => _selectedPlanet = p),
+            onSelectPlanet: _selectPlanet,
             autoRotate: _autoRotate,
             focusPlanetName: _focusPlanetName,
             focusToken: _focusToken,
@@ -129,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _BottomButton(label: 'Planet Info', onTap: () => _openInfoSheet(0)),
                 _BottomButton(label: 'Timeline', onTap: () => _openInfoSheet(1)),
                 _BottomButton(label: 'Quiz', onTap: () => _openInfoSheet(2)),
+                _BottomButton(label: 'Today', onTap: () => _openInfoSheet(3)),
               ],
             ),
           ),
@@ -243,7 +268,8 @@ class _InfoSheetState extends State<_InfoSheet> {
             ),
           ),
         ),
-        Padding(
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
@@ -252,6 +278,8 @@ class _InfoSheetState extends State<_InfoSheet> {
               _TabButton(label: 'Timeline', selected: _tab == 1, onTap: () => setState(() => _tab = 1)),
               const SizedBox(width: 8),
               _TabButton(label: 'Quiz', selected: _tab == 2, onTap: () => setState(() => _tab = 2)),
+              const SizedBox(width: 8),
+              _TabButton(label: 'Today', selected: _tab == 3, onTap: () => setState(() => _tab = 3)),
             ],
           ),
         ),
@@ -263,6 +291,7 @@ class _InfoSheetState extends State<_InfoSheet> {
               PlanetInfoPanel(planet: widget.planet),
               TimelinePanel(onEventSelect: widget.onEventSelect),
               const QuizPanel(),
+              const ApodPanel(),
             ],
           ),
         ),
@@ -280,26 +309,24 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary.withValues(alpha: 0.25) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected ? AppColors.primary : Colors.white24,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary.withValues(alpha: 0.25) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.white24,
           ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : Colors.white70,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 13,
-            ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.white70,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 13,
           ),
         ),
       ),
