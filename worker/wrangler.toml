@@ -6,4 +6,9 @@ compatibility_date = "2026-01-01"
 # after that command runs (see README in this folder).
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "e1b32b4a42b6488d9f938c2581a9e19d"
+
+# Workers AI — runs the chat model directly on Cloudflare's free tier
+# (10,000 Neurons/day at no charge, no card required). No API key needed.
+[ai]
+binding = "AI"

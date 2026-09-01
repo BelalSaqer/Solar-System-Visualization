@@ -1,7 +1,12 @@
 export interface Env {
-  ANTHROPIC_API_KEY: string;
+  AI: Ai;
   RATE_LIMIT_KV: KVNamespace;
 }
+
+// Cheap, well-tested instruct model — plenty for astronomy Q&A, and cheap
+// enough in Neurons to comfortably fit the Workers AI free daily allocation
+// (10,000 Neurons/day, no card required) at this app's expected volume.
+const MODEL = "@cf/meta/llama-3.2-3b-instruct";
 
 const SYSTEM_PROMPT =
   'You are the friendly astronomy assistant built into the "Solar System ' +
@@ -36,12 +41,12 @@ interface ChatRequestBody {
   selectedPlanet?: string;
 }
 
-interface AnthropicMessage {
-  role: "user" | "assistant";
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
-function sanitizeHistory(history: unknown): AnthropicMessage[] {
+function sanitizeHistory(history: unknown): ChatMessage[] {
   if (!Array.isArray(history)) return [];
   return (history as ChatTurn[]).slice(-MAX_HISTORY_MESSAGES).map((turn) => ({
     role: turn.role === "assistant" ? "assistant" : "user",
@@ -51,10 +56,9 @@ function sanitizeHistory(history: unknown): AnthropicMessage[] {
 
 /**
  * KV-backed rate limit, keyed by client IP. Persists across cold starts and
- * edge locations — this endpoint is publicly reachable and calls a billed
- * API, so this is the main defense against runaway spend (alongside a
- * spend limit set directly on the Anthropic console, which is the real
- * backstop no amount of app-side code can substitute for).
+ * edge locations. Workers AI's free daily allocation is shared across every
+ * visitor, so this also protects against one visitor exhausting it for
+ * everyone else.
  */
 async function checkRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
   const key = `rl:${ip}`;
@@ -121,42 +125,22 @@ export default {
       : "";
 
     try {
-      const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-opus-5",
-          max_tokens: MAX_RESPONSE_TOKENS,
-          system: SYSTEM_PROMPT + contextNote,
-          output_config: { effort: "low" },
-          messages: [...history, { role: "user", content: message }],
-        }),
+      const result = await env.AI.run(MODEL, {
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT + contextNote },
+          ...history,
+          { role: "user", content: message },
+        ],
+        max_tokens: MAX_RESPONSE_TOKENS,
       });
 
-      if (!anthropicResponse.ok) {
-        const errText = await anthropicResponse.text();
-        console.error("Anthropic API error", anthropicResponse.status, errText);
-        return jsonResponse({ error: "The assistant is unavailable right now. Please try again." }, 502);
-      }
-
-      const data = (await anthropicResponse.json()) as {
-        content: { type: string; text?: string }[];
-      };
-      const reply = data.content
-        .filter((block) => block.type === "text" && block.text)
-        .map((block) => block.text)
-        .join("\n")
-        .trim();
+      const reply = ("response" in result ? result.response : "")?.trim();
 
       return jsonResponse({
         reply: reply || "I'm not sure how to answer that — could you rephrase?",
       });
     } catch (error) {
-      console.error("Anthropic API call failed", error);
+      console.error("Workers AI call failed", error);
       return jsonResponse({ error: "The assistant is unavailable right now. Please try again." }, 502);
     }
   },

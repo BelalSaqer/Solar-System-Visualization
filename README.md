@@ -10,9 +10,9 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 |---|---|
 | ![Desktop overview](screenshots/desktop-overview.png) | ![Timeline focusing a planet](screenshots/desktop-timeline-focus.png) |
 
-| Planet Info | Quiz | Astronomy Picture of the Day | Mobile |
-|---|---|---|---|
-| ![Planet info panel](screenshots/planet-info.png) | ![Quiz](screenshots/quiz.png) | ![Astronomy Picture of the Day](screenshots/apod.png) | ![Mobile view](screenshots/mobile-overview.png) |
+| Planet Info | Quiz | Astronomy Picture of the Day | Ask AI | Mobile |
+|---|---|---|---|---|
+| ![Planet info panel](screenshots/planet-info.png) | ![Quiz](screenshots/quiz.png) | ![Astronomy Picture of the Day](screenshots/apod.png) | ![AI chat](screenshots/chat.png) | ![Mobile view](screenshots/mobile-overview.png) |
 
 ## Features
 
@@ -22,7 +22,7 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 - **Planet Info panel** — quick facts, description, fun facts, and a "Learn More on Wikipedia" link.
 - **Solar System Quiz** — 10 questions with live scoring, an answer review screen, and a persisted best score.
 - **NASA Astronomy Picture of the Day** — today's APOD with its full write-up, fetched live from NASA's public API.
-- **AI astronomy chat** — ask a Claude-powered assistant about planets, moons, missions, or space in general; it's aware of whichever planet you currently have selected.
+- **AI astronomy chat** — ask an assistant about planets, moons, missions, or space in general; it's aware of whichever planet you currently have selected.
 - **Persistence** — your last-viewed planet and best quiz score are remembered between sessions.
 - **Responsive layout** — a persistent timeline sidebar on wide screens, a draggable bottom sheet on mobile.
 
@@ -31,7 +31,7 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 - **Flutter / Dart** — single codebase across mobile, desktop, and web.
 - **A hand-rolled `CustomPainter` renderer** — the solar system is drawn on a `Canvas` with a tilted-ellipse projection (no external 3D/game engine), including per-frame camera easing for the "fly to planet" effect and its own drag-inertia physics. The underlying orbit/camera math is pure and unit-tested independently of the widget tree.
 - **NASA's APOD API** (`http` package) for live data, with a CORS-proxy fallback for image display on web.
-- **A Cloudflare Worker** (`worker/`) proxies chat requests to the Claude API — the client never holds the API key. It rate-limits by IP via Workers KV so a public demo can't run up an unbounded bill.
+- **A Cloudflare Worker** (`worker/`) runs the chat model via [Workers AI](https://developers.cloudflare.com/workers-ai/) — entirely on Cloudflare's free tier, no API key, no billing anywhere. Rate-limited by IP via Workers KV so the shared free daily quota can't be exhausted by one visitor.
 - **`shared_preferences`** for local persistence, **`url_launcher`** for outbound Wikipedia/NASA links.
 - **Firebase Hosting** for the web deployment.
 

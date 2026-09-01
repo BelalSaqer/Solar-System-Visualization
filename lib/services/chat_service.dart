@@ -23,8 +23,7 @@ class ChatTurn {
 /// key server-side. Never call an LLM API directly from the client — the
 /// key would be extractable from the shipped app.
 class ChatService {
-  // TODO: replace with the real *.workers.dev URL after `wrangler deploy`.
-  static const _endpoint = 'https://solar-system-chat.workers.dev';
+  static const _endpoint = 'https://solar-system-chat.belalsaqer.workers.dev';
 
   static Future<String> sendMessage({
     required String message,
