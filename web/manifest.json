@@ -1,0 +1,35 @@
+{
+    "name": "Solar System Visualization",
+    "short_name": "Solar System",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#05050A",
+    "theme_color": "#05050A",
+    "description": "An interactive 3D-style solar system built in Flutter, with an astronomical timeline, planet facts, and a quiz.",
+    "orientation": "any",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

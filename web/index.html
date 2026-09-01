@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#05050A">
+  <meta name="description" content="An interactive Flutter solar system: drag-to-rotate 3D-style view, an astronomical timeline that flies the camera to each planet, planet facts with Wikipedia links, and a quiz.">
+
+  <!-- Open Graph / link preview -->
+  <meta property="og:title" content="Solar System Visualization">
+  <meta property="og:description" content="An interactive Flutter solar system with a live timeline, planet facts, and a quiz.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://solar-system-3d-viz.web.app/">
+  <meta property="og:image" content="https://solar-system-3d-viz.web.app/icons/Icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Solar System">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Solar System Visualization</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    #app-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 42%, #1a0c33 0%, #020204 70%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity 0.5s ease;
+    }
+    #app-loading.app-loading-hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #app-loading .app-loading-sun {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffd873, #fdb813 60%, #c97a12 100%);
+      box-shadow: 0 0 40px 10px rgba(253, 184, 19, 0.45);
+      animation: app-loading-pulse 1.8s ease-in-out infinite;
+    }
+    #app-loading p {
+      margin-top: 20px;
+      letter-spacing: 0.5px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    @keyframes app-loading-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app-loading">
+    <div class="app-loading-sun"></div>
+    <p>Loading Solar System…</p>
+  </div>
+
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    (function () {
+      var loader = document.getElementById('app-loading');
+      if (!loader) return;
+      function dismiss() {
+        if (!loader || !loader.parentNode) return;
+        loader.classList.add('app-loading-hide');
+        setTimeout(function () {
+          if (loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 600);
+      }
+      var observer = new MutationObserver(function () {
+        if (document.querySelector('flt-glass-pane')) {
+          dismiss();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      // Safety net in case the glass-pane element name ever changes.
+      setTimeout(dismiss, 15000);
+    })();
+  </script>
+</body>
+</html>
