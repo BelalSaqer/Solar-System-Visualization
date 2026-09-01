@@ -10,6 +10,7 @@ import '../widgets/quiz_panel.dart';
 import '../widgets/solar_system_view.dart';
 import '../widgets/timeline_panel.dart';
 import '../widgets/apod_panel.dart';
+import '../widgets/chat_panel.dart';
 import '../utils/external_link.dart';
 import '../utils/app_prefs.dart';
 
@@ -154,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _BottomButton(label: 'Timeline', onTap: () => _openInfoSheet(1)),
                 _BottomButton(label: 'Quiz', onTap: () => _openInfoSheet(2)),
                 _BottomButton(label: 'Today', onTap: () => _openInfoSheet(3)),
+                _BottomButton(label: 'Ask AI', onTap: () => _openInfoSheet(4)),
               ],
             ),
           ),
@@ -280,6 +282,8 @@ class _InfoSheetState extends State<_InfoSheet> {
               _TabButton(label: 'Quiz', selected: _tab == 2, onTap: () => setState(() => _tab = 2)),
               const SizedBox(width: 8),
               _TabButton(label: 'Today', selected: _tab == 3, onTap: () => setState(() => _tab = 3)),
+              const SizedBox(width: 8),
+              _TabButton(label: 'Ask AI', selected: _tab == 4, onTap: () => setState(() => _tab = 4)),
             ],
           ),
         ),
@@ -292,6 +296,7 @@ class _InfoSheetState extends State<_InfoSheet> {
               TimelinePanel(onEventSelect: widget.onEventSelect),
               const QuizPanel(),
               const ApodPanel(),
+              ChatPanel(selectedPlanetName: widget.planet.name),
             ],
           ),
         ),
