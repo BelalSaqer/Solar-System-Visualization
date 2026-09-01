@@ -3,6 +3,7 @@
 An interactive solar system built in Flutter — drag to rotate and tilt the camera (with momentum), pinch or scroll to zoom, tap any planet to fly the camera to it, browse a historical astronomy timeline that does the same, take a 10-question quiz, check today's NASA Astronomy Picture of the Day, and ask an AI assistant about anything you see. Runs from a single codebase on **Android, iOS, Windows, macOS, Linux, and the Web.**
 
 🔗 **Live demo:** https://solar-system-3d-viz.web.app
+📄 **Full documentation:** [Solar_System_Visualization_Documentation.pdf](Solar_System_Visualization_Documentation.pdf) — architecture, every feature explained, deployment guides, and a troubleshooting log of real issues hit along the way.
 
 ## Screenshots
 
