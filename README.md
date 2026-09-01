@@ -1,6 +1,6 @@
 # Solar System Visualization
 
-An interactive solar system built in Flutter — drag to rotate and tilt the camera (with momentum), pinch or scroll to zoom, tap any planet to fly the camera to it, browse a historical astronomy timeline that does the same, take a 10-question quiz, and check today's NASA Astronomy Picture of the Day. Runs from a single codebase on **Android, iOS, Windows, macOS, Linux, and the Web.**
+An interactive solar system built in Flutter — drag to rotate and tilt the camera (with momentum), pinch or scroll to zoom, tap any planet to fly the camera to it, browse a historical astronomy timeline that does the same, take a 10-question quiz, check today's NASA Astronomy Picture of the Day, and ask an AI assistant about anything you see. Runs from a single codebase on **Android, iOS, Windows, macOS, Linux, and the Web.**
 
 🔗 **Live demo:** https://solar-system-3d-viz.web.app
 
@@ -22,6 +22,7 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 - **Planet Info panel** — quick facts, description, fun facts, and a "Learn More on Wikipedia" link.
 - **Solar System Quiz** — 10 questions with live scoring, an answer review screen, and a persisted best score.
 - **NASA Astronomy Picture of the Day** — today's APOD with its full write-up, fetched live from NASA's public API.
+- **AI astronomy chat** — ask a Claude-powered assistant about planets, moons, missions, or space in general; it's aware of whichever planet you currently have selected.
 - **Persistence** — your last-viewed planet and best quiz score are remembered between sessions.
 - **Responsive layout** — a persistent timeline sidebar on wide screens, a draggable bottom sheet on mobile.
 
@@ -30,6 +31,7 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 - **Flutter / Dart** — single codebase across mobile, desktop, and web.
 - **A hand-rolled `CustomPainter` renderer** — the solar system is drawn on a `Canvas` with a tilted-ellipse projection (no external 3D/game engine), including per-frame camera easing for the "fly to planet" effect and its own drag-inertia physics. The underlying orbit/camera math is pure and unit-tested independently of the widget tree.
 - **NASA's APOD API** (`http` package) for live data, with a CORS-proxy fallback for image display on web.
+- **A Cloudflare Worker** (`worker/`) proxies chat requests to the Claude API — the client never holds the API key. It rate-limits by IP via Workers KV so a public demo can't run up an unbounded bill.
 - **`shared_preferences`** for local persistence, **`url_launcher`** for outbound Wikipedia/NASA links.
 - **Firebase Hosting** for the web deployment.
 
@@ -39,13 +41,14 @@ An interactive solar system built in Flutter — drag to rotate and tilt the cam
 lib/
   models/     data classes (Planet, HistoricalEvent, QuizQuestion, ApodEntry, ...)
   data/       static content (planet stats, timeline events, quiz bank)
-  services/   ApodService — fetches/caches NASA's Astronomy Picture of the Day
-  widgets/    SolarSystemView (the renderer), PlanetInfoPanel, TimelinePanel, QuizPanel, ApodPanel, ControlsBar
+  services/   ApodService, ChatService — talk to NASA's API and the chat Worker
+  widgets/    SolarSystemView (the renderer), PlanetInfoPanel, TimelinePanel, QuizPanel, ApodPanel, ChatPanel, ControlsBar
   screens/    HomeScreen — layout, navigation, and state orchestration
   theme/      app-wide colors and Material theme
   utils/      small helpers (external link launching, local persistence)
 assets/textures/   equirectangular planet/sun/asteroid textures
 test/         unit tests for the orbit/camera math, plus a smoke test for the home screen
+worker/       Cloudflare Worker backing the AI chat (see worker/README.md)
 ```
 
 ## Testing

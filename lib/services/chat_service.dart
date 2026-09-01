@@ -19,12 +19,12 @@ class ChatTurn {
   Map<String, String> toJson() => {'role': role, 'content': content};
 }
 
-/// Calls the chatWithAssistant Cloud Function, which holds the LLM API key
-/// server-side. Never call an LLM API directly from the client — the key
-/// would be extractable from the shipped app.
+/// Calls the solar-system-chat Cloudflare Worker, which holds the LLM API
+/// key server-side. Never call an LLM API directly from the client — the
+/// key would be extractable from the shipped app.
 class ChatService {
-  static const _endpoint =
-      'https://us-central1-solar-system-3d-viz.cloudfunctions.net/chatWithAssistant';
+  // TODO: replace with the real *.workers.dev URL after `wrangler deploy`.
+  static const _endpoint = 'https://solar-system-chat.workers.dev';
 
   static Future<String> sendMessage({
     required String message,
