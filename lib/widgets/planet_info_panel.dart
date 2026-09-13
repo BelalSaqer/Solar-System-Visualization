@@ -86,7 +86,7 @@ class PlanetInfoPanel extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         OutlinedButton.icon(
-          onPressed: () => openExternalUrl(planet.wikipediaUrl),
+          onPressed: () => openExternalUrl(context, planet.wikipediaUrl),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),

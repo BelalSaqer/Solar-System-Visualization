@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
         action: SnackBarAction(
           label: 'Learn More',
           textColor: AppColors.primary,
-          onPressed: () => openExternalUrl(event.wikipediaUrl),
+          onPressed: () => openExternalUrl(context, event.wikipediaUrl),
         ),
       ),
     );

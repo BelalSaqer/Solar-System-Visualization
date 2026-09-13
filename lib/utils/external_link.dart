@@ -1,6 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> openExternalUrl(String url) async {
+Future<void> openExternalUrl(BuildContext context, String url) async {
   final uri = Uri.parse(url);
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
+  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!launched && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Couldn't open that link.")),
+    );
+  }
 }

@@ -59,7 +59,7 @@ flutter analyze
 flutter test
 ```
 
-`test/orbit_math_test.dart` unit-tests the pure orbit-position and camera-focus math (no widget pumping needed, since it's factored out of the renderer as plain functions) — determinism, linearity over time, zoom/pan targets for known and unknown planets, and clamping.
+`test/orbit_math_test.dart` unit-tests the pure orbit-position and camera-focus math (no widget pumping needed, since it's factored out of the renderer as plain functions) — determinism, linearity over time, zoom/pan targets for known and unknown planets, clamping, and that a moon's orbital offset rotates together with the camera instead of staying fixed in the un-rotated frame.
 
 ## Getting started
 

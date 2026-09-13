@@ -50,7 +50,7 @@ class _ApodPanelState extends State<ApodPanel> {
           );
         }
         if (snapshot.hasError) {
-          return _ErrorState(message: snapshot.error.toString(), onRetry: _retry);
+          return _ErrorState(onRetry: _retry);
         }
         return _ApodContent(entry: snapshot.data!);
       },
@@ -59,10 +59,9 @@ class _ApodPanelState extends State<ApodPanel> {
 }
 
 class _ErrorState extends StatelessWidget {
-  final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +73,10 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.satellite_alt_outlined, color: Color(0xFF9CA3AF), size: 40),
             const SizedBox(height: 16),
-            Text(
-              message.replaceFirst('Exception: ', ''),
+            const Text(
+              "Couldn't load today's picture — try again.",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF9CA3AF)),
+              style: TextStyle(color: Color(0xFF9CA3AF)),
             ),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
@@ -155,7 +154,7 @@ class _ApodContent extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         OutlinedButton.icon(
-          onPressed: () => openExternalUrl(entry.nasaUrl),
+          onPressed: () => openExternalUrl(context, entry.nasaUrl),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),

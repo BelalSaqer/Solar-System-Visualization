@@ -86,4 +86,28 @@ void main() {
       expect(neptuneTarget.distance, closeTo(neptune.distanceFromSun, 1e-9));
     });
   });
+
+  group('moonWorldPosition', () {
+    test('rotates together with viewRotation, matching the planet\'s basis', () {
+      const simTime = 5.0;
+      final atZero = moonWorldPosition(earth, 0, simTime, 0.0);
+      final planetAtZero = computePanTarget('Earth', planets, simTime, 0.0);
+      final moonOffsetAtZero = atZero - planetAtZero;
+
+      const rotation = math.pi / 2;
+      final rotated = moonWorldPosition(earth, 0, simTime, rotation);
+      final planetRotated = computePanTarget('Earth', planets, simTime, rotation);
+      final moonOffsetRotated = rotated - planetRotated;
+
+      // The moon's offset from its planet should rotate by exactly
+      // `rotation`, same as everything else in the scene — it must not stay
+      // fixed in the un-rotated frame.
+      final expectedOffset = Offset(
+        moonOffsetAtZero.dx * math.cos(rotation) - moonOffsetAtZero.dy * math.sin(rotation),
+        moonOffsetAtZero.dx * math.sin(rotation) + moonOffsetAtZero.dy * math.cos(rotation),
+      );
+      expect(moonOffsetRotated.dx, closeTo(expectedOffset.dx, 1e-9));
+      expect(moonOffsetRotated.dy, closeTo(expectedOffset.dy, 1e-9));
+    });
+  });
 }

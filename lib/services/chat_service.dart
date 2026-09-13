@@ -59,6 +59,11 @@ class ChatService {
         data['error'] as String? ?? 'Something went wrong (HTTP ${response.statusCode}).',
       );
     }
-    return data['reply'] as String? ?? '';
+
+    final reply = data['reply'] as String?;
+    if (reply == null || reply.trim().isEmpty) {
+      throw ChatServiceException("The assistant didn't send back a reply. Please try again.");
+    }
+    return reply;
   }
 }

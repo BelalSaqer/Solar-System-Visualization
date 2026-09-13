@@ -4,6 +4,14 @@ import 'package:http/http.dart' as http;
 
 import '../models/apod_entry.dart';
 
+class ApodServiceException implements Exception {
+  final String message;
+  ApodServiceException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 /// Fetches NASA's Astronomy Picture of the Day.
 ///
 /// Uses NASA's public `DEMO_KEY`, which is rate-limited (30 requests/hour,
@@ -26,15 +34,20 @@ class ApodService {
         .timeout(const Duration(seconds: 12));
 
     if (response.statusCode == 429) {
-      throw Exception('NASA\'s demo API is rate-limited right now — try again in a bit.');
+      throw ApodServiceException('NASA\'s demo API is rate-limited right now — try again in a bit.');
     }
     if (response.statusCode != 200) {
-      throw Exception('Failed to load (HTTP ${response.statusCode}).');
+      throw ApodServiceException('Failed to load (HTTP ${response.statusCode}).');
     }
 
-    final entry = ApodEntry.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
+    Map<String, dynamic> json;
+    try {
+      json = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ApodServiceException("NASA's response couldn't be read.");
+    }
+
+    final entry = ApodEntry.fromJson(json);
     _cached = entry;
     _cachedForDate = today;
     return entry;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -132,6 +133,25 @@ Offset computePanTarget(
   );
 }
 
+/// World-space point (already rotated by [viewRotation], same basis as
+/// [computePanTarget]) of [planet]'s moon at index [moonIndex].
+Offset moonWorldPosition(
+  Planet planet,
+  int moonIndex,
+  double simTime,
+  double viewRotation,
+) {
+  final moon = planet.moons[moonIndex];
+  final moonAngle = simTime * (planet.orbitSpeed * 5 + 0.2) +
+      (2 * math.pi * moonIndex / planet.moons.length);
+  final baseA = orbitAngleFor(planet, simTime) + viewRotation;
+  final ma = moonAngle + viewRotation;
+  return Offset(
+    math.cos(baseA) * planet.distanceFromSun + math.cos(ma) * moon.distance,
+    math.sin(baseA) * planet.distanceFromSun + math.sin(ma) * moon.distance,
+  );
+}
+
 class PlanetHitTarget {
   final Planet planet;
   final Offset center;
@@ -185,6 +205,8 @@ class _SolarSystemViewState extends State<SolarSystemView>
 
   final Map<String, ui.Image> _images = {};
   bool _assetsLoaded = false;
+  bool _assetsFailed = false;
+  Timer? _loadTimeoutTimer;
 
   List<PlanetHitTarget> _hitTargets = [];
   final List<_StarSeed> _stars = _generateStars(240);
@@ -224,15 +246,47 @@ class _SolarSystemViewState extends State<SolarSystemView>
       for (final p in planets)
         for (final m in p.moons) m.texture,
     };
-    await Future.wait(paths.map((path) async {
+
+    // A plain `.timeout()` on the load Future would leave its internal Timer
+    // pending if this widget is disposed before it fires. Using our own
+    // cancellable Timer lets dispose() clean it up immediately instead.
+    final completer = Completer<void>();
+    _loadTimeoutTimer = Timer(const Duration(seconds: 18), () {
+      if (!completer.isCompleted) {
+        completer.completeError(TimeoutException('Texture loading timed out'));
+      }
+    });
+
+    Future.wait(paths.map((path) async {
       final data = await rootBundle.load(path);
       final codec = await ui.instantiateImageCodec(
         data.buffer.asUint8List(),
       );
       final frame = await codec.getNextFrame();
       _images[path] = frame.image;
-    }));
-    if (mounted) setState(() => _assetsLoaded = true);
+    })).then(
+      (_) {
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (Object error) {
+        if (!completer.isCompleted) completer.completeError(error);
+      },
+    );
+
+    try {
+      await completer.future;
+      if (mounted) setState(() => _assetsLoaded = true);
+    } catch (_) {
+      if (mounted) setState(() => _assetsFailed = true);
+    } finally {
+      _loadTimeoutTimer?.cancel();
+      _loadTimeoutTimer = null;
+    }
+  }
+
+  void _retryLoadImages() {
+    setState(() => _assetsFailed = false);
+    _loadImages();
   }
 
   void _onTick(Duration elapsed) {
@@ -268,6 +322,10 @@ class _SolarSystemViewState extends State<SolarSystemView>
 
   @override
   void dispose() {
+    _loadTimeoutTimer?.cancel();
+    for (final image in _images.values) {
+      image.dispose();
+    }
     _ticker.dispose();
     super.dispose();
   }
@@ -325,24 +383,51 @@ class _SolarSystemViewState extends State<SolarSystemView>
       onScaleUpdate: _onScaleUpdate,
       onScaleEnd: _onScaleEnd,
       child: SizedBox.expand(
-        child: !_assetsLoaded
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white70),
-              )
-            : CustomPaint(
-                painter: _SolarSystemPainter(
-                  simTime: _simTime,
-                  viewRotation: _viewRotation,
-                  tilt: _tilt,
-                  zoom: _zoom,
-                  panOffset: _panOffset,
-                  images: _images,
-                  selectedPlanet: widget.selectedPlanet,
-                  stars: _stars,
-                  asteroids: _asteroids,
-                  onHitTargets: (targets) => _hitTargets = targets,
-                ),
-              ),
+        child: _assetsFailed
+            ? _buildAssetErrorState()
+            : !_assetsLoaded
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white70),
+                  )
+                : CustomPaint(
+                    painter: _SolarSystemPainter(
+                      simTime: _simTime,
+                      viewRotation: _viewRotation,
+                      tilt: _tilt,
+                      zoom: _zoom,
+                      panOffset: _panOffset,
+                      images: _images,
+                      selectedPlanet: widget.selectedPlanet,
+                      stars: _stars,
+                      asteroids: _asteroids,
+                      onHitTargets: (targets) => _hitTargets = targets,
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  Widget _buildAssetErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white70, size: 40),
+            const SizedBox(height: 16),
+            const Text(
+              "Couldn't load the solar system textures.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _retryLoadImages,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -651,17 +736,9 @@ class _SolarSystemPainter extends CustomPainter {
 
     for (int i = 0; i < planet.moons.length; i++) {
       final moon = planet.moons[i];
-      final moonAngle = simTime * (planet.orbitSpeed * 5 + 0.2) +
-          (2 * math.pi * i / planet.moons.length);
-      final moonWorldAngle = orbitAngleFor(planet, simTime);
-      final baseA = moonWorldAngle + viewRotation;
-      final planetWorldX = math.cos(baseA) * planet.distanceFromSun;
-      final planetWorldZ = math.sin(baseA) * planet.distanceFromSun;
-      final ma = moonAngle;
-      final moonWorldX = planetWorldX + math.cos(ma) * moon.distance;
-      final moonWorldZ = planetWorldZ + math.sin(ma) * moon.distance;
-      final sx = moonWorldX - panOffset.dx;
-      final sy = (moonWorldZ - panOffset.dy) * tilt;
+      final moonWorld = moonWorldPosition(planet, i, simTime, viewRotation);
+      final sx = moonWorld.dx - panOffset.dx;
+      final sy = (moonWorld.dy - panOffset.dy) * tilt;
       final moonPos = canvasCenter + Offset(sx, sy) * scale;
       final moonImage = images[moon.texture];
       final moonRadius = math.max(moon.size * scale, 2.5);
